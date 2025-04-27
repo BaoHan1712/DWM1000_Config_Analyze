@@ -14,7 +14,7 @@ const uint8_t PIN_IRQ = 15;
 const uint8_t PIN_SS = 5;
 
 char this_anchor_addr[] = "84:00:22:EA:82:60:3B:9C";
-float this_anchor_target_distance = 1.0; // mục tiêu (m)
+float this_anchor_target_distance = 1.2; // mục tiêu (m)
 
 uint16_t this_anchor_Adelay = 16511;
 uint16_t Adelay_delta = 100;

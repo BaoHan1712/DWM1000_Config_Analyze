@@ -8,16 +8,10 @@
 #define SPI_MOSI 23
 #define DW_CS 4
 
-// UART2 pin
-#define UART2_TX 17
-#define UART2_RX 16
+const uint8_t PIN_RST = 26;
+const uint8_t PIN_IRQ = 15;
+const uint8_t PIN_SS = 5;
 
-// connection pins
-const uint8_t PIN_RST = 26; // reset pin
-const uint8_t PIN_IRQ = 15; // irq pin
-const uint8_t PIN_SS = 5;   // spi select pin
-
-// TAG antenna delay defaults to 16384
 char tag_addr[] = "7D:00:22:EA:82:60:3B:9C";
 
 U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE);
@@ -41,29 +35,9 @@ void updateOLED(int distance) {
   u8g2.sendBuffer();
 }
 
-void sendDistance() {
-  uint8_t packet[3];
-  packet[0] = 0x02; // Start byte
-  packet[1] = (lastDistance >> 8) & 0xFF; // High byte
-  packet[2] = lastDistance & 0xFF;        // Low byte
-
-  Serial2.write(packet, 3); // Gửi 3 byte
-}
-
-void checkSerialCommand() {
-  if (Serial2.available()) {
-    uint8_t cmd = Serial2.read();
-    if (cmd == 1 or cmd == 0 && hasRange) {
-      sendDistance();
-    }
-  }
-}
-
 void setup() {
   Serial.begin(115200);
   delay(1000);
-
-  Serial2.begin(115200, SERIAL_8N1, UART2_RX, UART2_TX); // Khởi tạo UART2
 
   u8g2.begin();
   showWelcomeScreen();
@@ -81,8 +55,11 @@ void setup() {
 
 void loop() {
   DW1000Ranging.loop();
-  checkSerialCommand(); // luôn kiểm tra nếu STM32 gửi lệnh
 
+  // Xử lý yêu cầu từ STM32
+  handleSerialRequest();
+
+  // Nếu chưa có khoảng cách, giữ màn hình "Hi HanBao!"
   if (!hasRange) {
     static unsigned long lastUpdate = 0;
     if (millis() - lastUpdate > 5000) {
@@ -95,18 +72,27 @@ void loop() {
 void newRange() {
   float range = DW1000Ranging.getDistantDevice()->getRange();
   int dist_mm = round(range * 1000);
-
-  // Serial.println(dist_mm); // debug ra USB Serial
-
+  
   hasRange = true;
   lastDistance = dist_mm;
   updateOLED(dist_mm);
+
 }
 
 void newDevice(DW1000Device *device) {
-  // Thêm xử lý nếu cần
+  hasRange = false;
 }
 
 void inactiveDevice(DW1000Device *device) {
   hasRange = false;
+}
+
+void handleSerialRequest() {
+  if (Serial.available()) {
+    uint8_t received = Serial.read();
+    if (received == 1) {
+      // Khi nhận được byte 1 -> gửi lastDistance ra
+      Serial.println(lastDistance);
+    }
+  }
 }

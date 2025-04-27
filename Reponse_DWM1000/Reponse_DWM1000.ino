@@ -5,7 +5,7 @@
 
 char anchor_addr[] = "84:00:5B:D5:A9:9A:E2:9C";  //#4
 
-uint16_t Adelay = 16331;
+uint16_t Adelay = 16296;
 float dist_m = 1; //meters
 
 #define SPI_SCK 18
@@ -62,10 +62,7 @@ void updateLCD(uint16_t distance, float rxPower, float quality) {
 }
 
 void sendDistancePacket(uint16_t distance) {
-    Serial.write(0x02); // Start byte
-    Serial.write((distance >> 8) & 0xFF);
-    Serial.write(distance & 0xFF);
-    Serial.write(0x03); 
+    Serial.println(distance); 
 }
 
 
@@ -89,7 +86,7 @@ void setup() {
     DW1000Ranging.attachNewDevice(newDevice);
     DW1000Ranging.attachInactiveDevice(inactiveDevice);
     DW1000Ranging.setReplyTime(10000);
-    DW1000Ranging.setRangeFilterValue(10);
+    DW1000Ranging.setRangeFilterValue(20);
 
     DW1000Ranging.useRangeFilter(true);
     DW1000.setChannel(7);
@@ -112,7 +109,7 @@ void newRange() {
         lastValidDistance = dist_mm;
     }
 
-    sendDistancePacket(lastValidDistance);  // Truyền qua UART theo chuẩn 0x02 + 2 byte + checksum + 0x03
+    sendDistancePacket(lastValidDistance);  
 
     updateLCD(lastValidDistance, rxPower, quality);
 }
